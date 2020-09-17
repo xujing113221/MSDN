@@ -5,6 +5,7 @@ import numpy as np
 import math
 import pdb
 
+
 class Conv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, relu=True, same_padding=False, bn=False):
         super(Conv2d, self).__init__()
@@ -40,7 +41,7 @@ def save_net(fname, net):
     h5f = h5py.File(fname, mode='w')
     for k, v in net.state_dict().items():
         h5f.create_dataset(k, data=v.cpu().numpy())
-        #print '[Saved]: {}'.format(k)
+        # print '[Saved]: {}'.format(k)
 
 
 def load_net(fname, net):
@@ -51,13 +52,12 @@ def load_net(fname, net):
             if k in h5f:
                 param = torch.from_numpy(np.asarray(h5f[k]))
                 v.copy_(param)
-                print '[Copied]: {}'.format(k)
+                print('[Copied]: {}'.format(k))
             else:
-                print '[Missed]: {}'.format(k)
+                print('[Missed]: {}'.format(k))
     except Exception as e:
         pdb.set_trace()
-        print '[Loaded net not complete] Parameter[{}] Size Mismatch...'.format(k)
-        
+        print('[Loaded net not complete] Parameter[{}] Size Mismatch...'.format(k))
 
 
 def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):
@@ -69,6 +69,7 @@ def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):
 
 def set_trainable(model, requires_grad):
     set_trainable_param(model.parameters(), requires_grad)
+
 
 def set_trainable_param(parameters, requires_grad):
     for param in parameters:
@@ -114,12 +115,13 @@ def clip_gradient(model, clip_norm):
         if p.requires_grad and p.grad is not None:
             modulenorm = p.grad.data.norm()
             totalnorm += modulenorm ** 2
-    totalnorm = np.sqrt(totalnorm)
+    totalnorm = np.sqrt(totalnorm).cuda()
 
     norm = clip_norm / max(totalnorm, clip_norm)
     for p in model.parameters():
         if p.requires_grad and p.grad is not None:
             p.grad.mul_(norm)
+
 
 def get_optimizer(lr, mode, args, vgg_features_var, rpn_features, hdn_features, language_features):
     """ To get the optimizer
@@ -134,21 +136,21 @@ def get_optimizer(lr, mode, args, vgg_features_var, rpn_features, hdn_features, 
         if args.optimizer == 0:
             optimizer = torch.optim.SGD([
                 {'params': rpn_features},
-                {'params': hdn_features}, 
-                {'params': language_features, 'weight_decay':0.0}
-                ], lr=lr, momentum=args.momentum, weight_decay=0.0005, nesterov=args.nesterov)
+                {'params': hdn_features},
+                {'params': language_features, 'weight_decay': 0.0}
+            ], lr=lr, momentum=args.momentum, weight_decay=0.0005, nesterov=args.nesterov)
         elif args.optimizer == 1:
             optimizer = torch.optim.Adam([
                 {'params': rpn_features},
-                {'params': hdn_features}, 
-                {'params': language_features, 'weight_decay':0.0}
-                ], lr=lr, weight_decay=0.0005)
-        elif args.optimizer == 2:    
+                {'params': hdn_features},
+                {'params': language_features, 'weight_decay': 0.0}
+            ], lr=lr, weight_decay=0.0005)
+        elif args.optimizer == 2:
             optimizer = torch.optim.Adagrad([
                 {'params': rpn_features},
-                {'params': hdn_features}, 
-                {'params': language_features, 'weight_decay':0.0}
-                ], lr=lr, weight_decay=0.0005)
+                {'params': hdn_features},
+                {'params': language_features, 'weight_decay': 0.0}
+            ], lr=lr, weight_decay=0.0005)
         else:
             raise Exception('Unrecognized optimization algorithm specified!')
 
@@ -159,20 +161,19 @@ def get_optimizer(lr, mode, args, vgg_features_var, rpn_features, hdn_features, 
             optimizer = torch.optim.SGD([
                 {'params': hdn_features},
                 {'params': language_features, 'weight_decay': 0.0}
-                ], lr=lr, momentum=args.momentum, weight_decay=0.0005, nesterov=args.nesterov)
+            ], lr=lr, momentum=args.momentum, weight_decay=0.0005, nesterov=args.nesterov)
         elif args.optimizer == 1:
             optimizer = torch.optim.Adam([
                 {'params': hdn_features},
                 {'params': language_features, 'weight_decay': 0.0}
-                ], lr=lr, weight_decay=0.0005)
-        elif args.optimizer == 2:    
+            ], lr=lr, weight_decay=0.0005)
+        elif args.optimizer == 2:
             optimizer = torch.optim.Adagrad([
                 {'params': hdn_features},
                 {'params': language_features, 'weight_decay': 0.0}
-                ], lr=lr, weight_decay=0.0005)
+            ], lr=lr, weight_decay=0.0005)
         else:
             raise Exception('Unrecognized optimization algorithm specified!')
-        
 
     elif mode == 2:
         set_trainable_param(rpn_features, True)
@@ -183,27 +184,25 @@ def get_optimizer(lr, mode, args, vgg_features_var, rpn_features, hdn_features, 
             optimizer = torch.optim.SGD([
                 {'params': rpn_features},
                 {'params': vgg_features_var, 'lr': lr * 0.1},
-                {'params': hdn_features}, 
+                {'params': hdn_features},
                 {'params': language_features, 'weight_decay': 0.0}
-                ], lr=lr, momentum=args.momentum, weight_decay=0.0005, nesterov=args.nesterov)
+            ], lr=lr, momentum=args.momentum, weight_decay=0.0005, nesterov=args.nesterov)
         elif args.optimizer == 1:
             optimizer = torch.optim.Adam([
                 {'params': rpn_features},
                 {'params': vgg_features_var, 'lr': lr * 0.1},
-                {'params': hdn_features}, 
+                {'params': hdn_features},
                 {'params': language_features, 'weight_decay': 0.0}
-                ], lr=lr, weight_decay=0.0005)
-        elif args.optimizer == 2:    
+            ], lr=lr, weight_decay=0.0005)
+        elif args.optimizer == 2:
             optimizer = torch.optim.Adagrad([
                 {'params': rpn_features},
                 {'params': vgg_features_var, 'lr': lr * 0.1},
-                {'params': hdn_features}, 
+                {'params': hdn_features},
                 {'params': language_features, 'weight_decay': 0.0}
-                ], lr=lr, weight_decay=0.0005)
+            ], lr=lr, weight_decay=0.0005)
         else:
             raise Exception('Unrecognized optimization algorithm specified!')
-
-        
 
     elif mode == 3:
         set_trainable_param(rpn_features, True)
@@ -214,36 +213,35 @@ def get_optimizer(lr, mode, args, vgg_features_var, rpn_features, hdn_features, 
             optimizer = torch.optim.SGD([
                 {'params': rpn_features},
                 {'params': vgg_features_var, 'lr': lr * 0.01},
-                {'params': hdn_features[:-4]}, 
-                {'params': hdn_features[-4:], 'lr': lr}, 
+                {'params': hdn_features[:-4]},
+                {'params': hdn_features[-4:], 'lr': lr},
                 {'params': language_features, 'weight_decay': 0.0, 'lr': lr}
-                ], lr=lr * 0.1, momentum=args.momentum, weight_decay=0.0005, nesterov=args.nesterov)
+            ], lr=lr * 0.1, momentum=args.momentum, weight_decay=0.0005, nesterov=args.nesterov)
         elif args.optimizer == 1:
             optimizer = torch.optim.Adam([
                 {'params': rpn_features},
                 {'params': vgg_features_var, 'lr': lr * 0.01},
-                {'params': hdn_features[:-4]}, 
-                {'params': hdn_features[-4:], 'lr': lr}, 
+                {'params': hdn_features[:-4]},
+                {'params': hdn_features[-4:], 'lr': lr},
                 {'params': language_features, 'weight_decay': 0.0, 'lr': lr}
-                ], lr=lr * 0.1, weight_decay=0.0005)
-        elif args.optimizer == 2:    
+            ], lr=lr * 0.1, weight_decay=0.0005)
+        elif args.optimizer == 2:
             optimizer = torch.optim.Adagrad([
                 {'params': rpn_features},
                 {'params': vgg_features_var, 'lr': lr * 0.01},
-                {'params': hdn_features[:-4]}, 
-                {'params': hdn_features[-4:], 'lr': lr}, 
+                {'params': hdn_features[:-4]},
+                {'params': hdn_features[-4:], 'lr': lr},
                 {'params': language_features, 'weight_decay': 0.0, 'lr': lr}
-                ], lr=lr * 0.1, weight_decay=0.0005)
+            ], lr=lr * 0.1, weight_decay=0.0005)
         else:
             raise Exception('Unrecognized optimization algorithm specified!')
-        
-    
-    return optimizer
 
+    return optimizer
 
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
 
@@ -262,6 +260,7 @@ class AverageMeter(object):
 
 class AccuracyMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
 
@@ -294,4 +293,3 @@ class AccuracyMeter(object):
     @property
     def background(self):
         return self.bg / self.count
-

@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import time
 from faster_rcnn import network
-from faster_rcnn.RPN import RPN # Hierarchical_Descriptive_Model
+from faster_rcnn.RPN import RPN  # Hierarchical_Descriptive_Model
 from faster_rcnn.utils.timer import Timer
 from faster_rcnn.utils.HDN_utils import check_recall
 
@@ -16,7 +16,7 @@ import pdb
 
 parser = argparse.ArgumentParser('Options for training RPN in pytorch')
 
-## training settings
+# training settings
 parser.add_argument('--lr', type=float, default=0.01, help='To disable the Lanuage Model ')
 parser.add_argument('--max_epoch', type=int, default=5, metavar='N', help='max iterations for training')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M', help='percentage of past parameters to store')
@@ -25,8 +25,8 @@ parser.add_argument('--disable_clip_gradient', action='store_true', help='Whethe
 parser.add_argument('--use_normal_anchors', action='store_true', help='Whether to use kmeans anchors')
 parser.add_argument('--step_size', type=int, default=2, help='step to decay the learning rate')
 
-## Environment Settings
-parser.add_argument('--pretrained_model', type=str, default='model/pretrained_models/VGG_imagenet.npy', help='Path for the to-evaluate model')
+# Environment Settings
+parser.add_argument('--pretrained_model', type=str, default='model/pretrained_models/d.npy', help='Path for the to-evaluate model')
 parser.add_argument('--dataset_option', type=str, default='small', help='The dataset to use (small | normal | fat)')
 parser.add_argument('--output_dir', type=str, default='./output/RPN', help='Location to output the model')
 parser.add_argument('--model_name', type=str, default='RPN_region', help='model name for snapshot')
@@ -34,26 +34,27 @@ parser.add_argument('--resume_training', action='store_true', help='Resume train
 parser.add_argument('--resume_model', type=str, default='', help='The model we resume')
 args = parser.parse_args()
 
+
 def main():
     global args
-    print "Loading training set and testing set..."
+    print("Loading training set and testing set...")
     train_set = visual_genome(args.dataset_option, 'train')
     test_set = visual_genome('small', 'test')
-    print "Done."
+    print("Done.")
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=True, num_workers=8, pin_memory=True)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False, num_workers=8, pin_memory=True)
     net = RPN(not args.use_normal_anchors)
     if args.resume_training:
-        print 'Resume training from: {}'.format(args.resume_model)
+        print('Resume training from: {}'.format(args.resume_model))
         if len(args.resume_model) == 0:
             raise Exception('[resume_model] not specified')
         network.load_net(args.resume_model, net)
         optimizer = torch.optim.SGD([
-                {'params': list(net.parameters())[26:]}, 
-                ], lr=args.lr, momentum=args.momentum, weight_decay=0.0005)
+            {'params': list(net.parameters())[26:]},
+        ], lr=args.lr, momentum=args.momentum, weight_decay=0.0005)
     else:
-        print 'Training from scratch...Initializing network...'
+        print('Training from scratch...Initializing network...')
         optimizer = torch.optim.SGD(list(net.parameters())[26:], lr=args.lr, momentum=args.momentum, weight_decay=0.0005)
 
     network.set_trainable(net.features, requires_grad=False)
@@ -63,9 +64,9 @@ def main():
         os.mkdir(args.output_dir)
 
     best_recall = np.array([0.0, 0.0])
-    
+
     for epoch in range(0, args.max_epoch):
-        
+
         # Training
         train(train_loader, net, optimizer, epoch)
 
@@ -75,7 +76,7 @@ def main():
               'Recall: '
               'object: {recall[0]: .3f}%% (Best: {best_recall[0]: .3f}%%)'
               'region: {recall[1]: .3f}%% (Best: {best_recall[1]: .3f}%%)'.format(
-                epoch = epoch, recall=recall * 100, best_recall=best_recall * 100))
+                  epoch=epoch, recall=recall * 100, best_recall=best_recall * 100))
         # update learning rate
         if epoch % args.step_size == 0:
             args.disable_clip_gradient = True
@@ -91,8 +92,6 @@ def main():
             best_recall = recall
             save_name = os.path.join(args.output_dir, '{}_best.h5'.format(args.model_name, epoch))
             network.save_net(save_name, net)
-
-        
 
 
 def train(train_loader, target_net, optimizer, epoch):
@@ -136,7 +135,7 @@ def train(train_loader, target_net, optimizer, epoch):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if  (i + 1) % args.log_interval == 0:
+        if (i + 1) % args.log_interval == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Batch_Time: {batch_time.avg:.3f}s\t'
                   'lr: {lr: f}\t'
@@ -147,17 +146,16 @@ def train(train_loader, target_net, optimizer, epoch):
                   '\t[region]: '
                   'cls_loss: {cls_loss_region.avg:.3f}\t'
                   'reg_loss: {reg_loss_region.avg:.3f}\t'.format(
-                   epoch, i + 1, len(train_loader), batch_time=batch_time,lr=args.lr, 
-                   data_time=data_time, loss=train_loss, 
-                   cls_loss_object=train_loss_obj_entropy, reg_loss_object=train_loss_obj_box, 
-                   cls_loss_region=train_loss_reg_entropy, reg_loss_region=train_loss_reg_box))
-
+                      epoch, i + 1, len(train_loader), batch_time=batch_time, lr=args.lr,
+                      data_time=data_time, loss=train_loss,
+                      cls_loss_object=train_loss_obj_entropy, reg_loss_object=train_loss_obj_box,
+                      cls_loss_region=train_loss_reg_entropy, reg_loss_region=train_loss_reg_box))
 
 
 def test(test_loader, target_net):
     box_num = np.array([0, 0])
     correct_cnt, total_cnt = np.array([0, 0]), np.array([0, 0])
-    print '========== Testing ======='
+    print('========== Testing =======')
     target_net.eval()
 
     batch_time = network.AverageMeter()
@@ -176,16 +174,17 @@ def test(test_loader, target_net):
         end = time.time()
         if (i + 1) % 100 == 0 and i > 0:
             print('[{0}/{10}]  Time: {1:2.3f}s/img).'
-                  '\t[object] Avg: {2:2.2f} Boxes/im, Top-50 recall: {3:2.3f} ({4:d}/{5:d})' 
+                  '\t[object] Avg: {2:2.2f} Boxes/im, Top-50 recall: {3:2.3f} ({4:d}/{5:d})'
                   '\t[region] Avg: {6:2.2f} Boxes/im, Top-50 recall: {7:2.3f} ({8:d}/{9:d})'.format(
-                    i + 1, batch_time.avg, 
-                    box_num[0] / float(i + 1), correct_cnt[0] / float(total_cnt[0])* 100, correct_cnt[0], total_cnt[0], 
-                    box_num[1] / float(i + 1), correct_cnt[1] / float(total_cnt[1])* 100, correct_cnt[1], total_cnt[1], 
-                    len(test_loader)))
+                      i + 1, batch_time.avg,
+                      box_num[0] / float(i + 1), correct_cnt[0] / float(total_cnt[0]) * 100, correct_cnt[0], total_cnt[0],
+                      box_num[1] / float(i + 1), correct_cnt[1] / float(total_cnt[1]) * 100, correct_cnt[1], total_cnt[1],
+                      len(test_loader)))
 
     recall = correct_cnt / total_cnt.astype(np.float)
-    print '====== Done Testing ===='
+    print('====== Done Testing ====')
     return recall
+
 
 if __name__ == '__main__':
     main()

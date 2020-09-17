@@ -5,8 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from utils.timer import Timer
-from utils.blob import im_list_to_blob
+# from utils.timer import Timer
+# from utils.blob import im_list_to_blob
 from fast_rcnn.nms_wrapper import nms
 from rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
 from rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
@@ -34,19 +34,18 @@ def nms_detections(pred_boxes, scores, nms_thresh, inds=None):
     return pred_boxes[keep], scores[keep], inds[keep]
 
 
-
 class RPN(nn.Module):
     _feat_stride = [16, ]
-    
-    anchor_scales_kmeans = [19.944, 9.118, 35.648, 42.102, 23.476, 15.882, 6.169, 9.702, 6.072, 32.254, 3.294, 10.148, 22.443, \
-            13.831, 16.250, 27.969, 14.181, 27.818, 34.146, 29.812, 14.219, 22.309, 20.360, 24.025, 40.593, ]
-    anchor_ratios_kmeans =  [2.631, 2.304, 0.935, 0.654, 0.173, 0.720, 0.553, 0.374, 1.565, 0.463, 0.985, 0.914, 0.734, 2.671, \
-            0.209, 1.318, 1.285, 2.717, 0.369, 0.718, 0.319, 0.218, 1.319, 0.442, 1.437, ]
 
-    anchor_scales_kmeans_region = [18.865, 27.466, 35.138, 9.383, 34.770, 31.223, 14.003, 40.663, 20.187, 6.062, 31.354, 21.213, \
-            19.379, 9.843, 5.980, 3.271, 14.700, 12.794, 25.936, 24.221, 9.690, 27.328, 41.850, 16.087, 23.949,]
-    anchor_ratios_kmeans_region =  [2.796, 2.810, 0.981, 0.416, 0.381, 0.422, 2.358, 1.445, 1.298, 1.690, 0.680, 0.201, 0.636, 0.979, \
-            0.590, 1.006, 0.956, 0.327, 0.872, 0.455, 2.201, 1.478, 0.657, 0.224, 0.181, ]
+    anchor_scales_kmeans = [19.944, 9.118, 35.648, 42.102, 23.476, 15.882, 6.169, 9.702, 6.072, 32.254, 3.294, 10.148, 22.443,
+                            13.831, 16.250, 27.969, 14.181, 27.818, 34.146, 29.812, 14.219, 22.309, 20.360, 24.025, 40.593, ]
+    anchor_ratios_kmeans = [2.631, 2.304, 0.935, 0.654, 0.173, 0.720, 0.553, 0.374, 1.565, 0.463, 0.985, 0.914, 0.734, 2.671,
+                            0.209, 1.318, 1.285, 2.717, 0.369, 0.718, 0.319, 0.218, 1.319, 0.442, 1.437, ]
+
+    anchor_scales_kmeans_region = [18.865, 27.466, 35.138, 9.383, 34.770, 31.223, 14.003, 40.663, 20.187, 6.062, 31.354, 21.213,
+                                   19.379, 9.843, 5.980, 3.271, 14.700, 12.794, 25.936, 24.221, 9.690, 27.328, 41.850, 16.087, 23.949, ]
+    anchor_ratios_kmeans_region = [2.796, 2.810, 0.981, 0.416, 0.381, 0.422, 2.358, 1.445, 1.298, 1.690, 0.680, 0.201, 0.636, 0.979,
+                                   0.590, 1.006, 0.956, 0.327, 0.872, 0.455, 2.201, 1.478, 0.657, 0.224, 0.181, ]
 
     anchor_scales_normal = [2, 4, 8, 16, 32, 64]
     anchor_ratios_normal = [0.25, 0.5, 1, 2, 4]
@@ -57,13 +56,13 @@ class RPN(nn.Module):
         super(RPN, self).__init__()
 
         if use_kmeans_anchors:
-            print 'using k-means anchors'
+            print('using k-means anchors')
             self.anchor_scales = self.anchor_scales_kmeans
             self.anchor_ratios = self.anchor_ratios_kmeans
             self.anchor_scales_region = self.anchor_scales_kmeans_region
             self.anchor_ratios_region = self.anchor_ratios_kmeans_region
         else:
-            print 'using normal anchors'
+            print('using normal anchors')
             self.anchor_scales, self.anchor_ratios = \
                 np.meshgrid(self.anchor_scales_normal, self.anchor_ratios_normal, indexing='ij')
             self.anchor_scales = self.anchor_scales.reshape(-1)
@@ -78,9 +77,9 @@ class RPN(nn.Module):
 
         # self.features = VGG16(bn=False)
         self.features = models.vgg16(pretrained=True).features
-        self.features.__delattr__('30') # to delete the max pooling
+        self.features.__delattr__('30')  # to delete the max pooling
         # by default, fix the first four layers
-        network.set_trainable_param(list(self.features.parameters())[:8], requires_grad=False) 
+        network.set_trainable_param(list(self.features.parameters())[:8], requires_grad=False)
 
         # self.features = models.vgg16().features
         self.conv1 = Conv2d(512, 512, 3, same_padding=True)
@@ -102,7 +101,6 @@ class RPN(nn.Module):
 
     def initialize_parameters(self, normal_method='normal'):
 
-
         if normal_method == 'normal':
             normal_fun = network.weights_normal_init
         elif normal_method == 'MSRA':
@@ -123,7 +121,6 @@ class RPN(nn.Module):
 
     def forward(self, im_data, im_info, gt_objects=None, gt_regions=None, dontcare_areas=None):
 
-
         im_data = Variable(im_data.cuda())
 
         features = self.features(im_data)
@@ -134,7 +131,7 @@ class RPN(nn.Module):
         rpn_cls_score = self.score_conv(rpn_conv1)
         # print 'rpn_cls_score.std()', rpn_cls_score.data.std()
         rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
-        rpn_cls_prob = F.softmax(rpn_cls_score_reshape)
+        rpn_cls_prob = F.softmax(rpn_cls_score_reshape,dim=1)
         rpn_cls_prob_reshape = self.reshape_layer(rpn_cls_prob, self.anchor_num*2)
         # rpn boxes
         rpn_bbox_pred = self.bbox_conv(rpn_conv1)
@@ -146,7 +143,7 @@ class RPN(nn.Module):
         rpn_cls_score_region = self.score_conv(rpn_conv1_region)
         # print 'rpn_cls_score_region.std()', rpn_cls_score_region.data.std()
         rpn_cls_score_region_reshape = self.reshape_layer(rpn_cls_score_region, 2)
-        rpn_cls_prob_region = F.softmax(rpn_cls_score_region_reshape)
+        rpn_cls_prob_region = F.softmax(rpn_cls_score_region_reshape,dim=1)
         rpn_cls_prob_region_reshape = self.reshape_layer(rpn_cls_prob_region, self.anchor_num*2)
         # rpn boxes
         rpn_bbox_pred_region = self.bbox_conv(rpn_conv1_region)
@@ -155,22 +152,22 @@ class RPN(nn.Module):
         # proposal layer
         cfg_key = 'TRAIN' if self.training else 'TEST'
         rois = self.proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info,
-                                   cfg_key, self._feat_stride, self.anchor_scales, self.anchor_ratios, 
+                                   cfg_key, self._feat_stride, self.anchor_scales, self.anchor_ratios,
                                    is_region=False)
         region_rois = self.proposal_layer(rpn_cls_prob_region_reshape, rpn_bbox_pred_region, im_info,
-                                   cfg_key, self._feat_stride, self.anchor_scales_region, self.anchor_ratios_region, 
-                                   is_region=True)
+                                          cfg_key, self._feat_stride, self.anchor_scales_region, self.anchor_ratios_region,
+                                          is_region=True)
 
         # generating training labels and build the rpn loss
         if self.training:
             rpn_data = self.anchor_target_layer(rpn_cls_score, gt_objects, dontcare_areas,
                                                 im_info, self.anchor_scales, self.anchor_ratios, self._feat_stride, )
             rpn_data_region = self.anchor_target_layer(rpn_cls_score_region, gt_regions[:, :4], dontcare_areas,
-                                                im_info, self.anchor_scales_region, self.anchor_ratios_region, \
-                                                self._feat_stride, is_region=True)
+                                                       im_info, self.anchor_scales_region, self.anchor_ratios_region,
+                                                       self._feat_stride, is_region=True)
             if DEBUG:
-                print 'rpn_data', rpn_data
-                print 'rpn_cls_score_reshape', rpn_cls_score_reshape
+                print('rpn_data', rpn_data)
+                print('rpn_cls_score_reshape', rpn_cls_score_reshape)
 
             self.cross_entropy, self.loss_box = \
                 self.build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data)
@@ -200,9 +197,9 @@ class RPN(nn.Module):
         error = torch.sum(torch.abs(predict - rpn_label.data))
         #  try:
         if predict.size()[0] < 256:
-            print predict.size()
-            print rpn_label.size()
-            print fg_cnt
+            print(predict.size())
+            print(rpn_label.size())
+            print(fg_cnt)
 
         if is_region:
             self.tp_region = torch.sum(predict[:fg_cnt].eq(rpn_label.data[:fg_cnt]))
@@ -210,14 +207,14 @@ class RPN(nn.Module):
             self.fg_cnt_region = fg_cnt
             self.bg_cnt_region = bg_cnt
             if DEBUG:
-                print 'accuracy: %2.2f%%' % ((self.tp + self.tf) / float(fg_cnt + bg_cnt) * 100)
+                print('accuracy: %2.2f%%' % ((self.tp + self.tf) / float(fg_cnt + bg_cnt) * 100))
         else:
             self.tp = torch.sum(predict[:fg_cnt].eq(rpn_label.data[:fg_cnt]))
             self.tf = torch.sum(predict[fg_cnt:].eq(rpn_label.data[fg_cnt:]))
             self.fg_cnt = fg_cnt
             self.bg_cnt = bg_cnt
             if DEBUG:
-                print 'accuracy: %2.2f%%' % ((self.tp + self.tf) / float(fg_cnt + bg_cnt) * 100)
+                print('accuracy: %2.2f%%' % ((self.tp + self.tf) / float(fg_cnt + bg_cnt) * 100))
 
         rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label)
         # print rpn_cross_entropy
@@ -227,10 +224,9 @@ class RPN(nn.Module):
         rpn_bbox_targets = torch.mul(rpn_bbox_targets, rpn_bbox_inside_weights)
         rpn_bbox_pred = torch.mul(rpn_bbox_pred, rpn_bbox_inside_weights)
 
-
         # print 'Smooth L1 loss: ', F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets, size_average=False)
         # print 'fg_cnt', fg_cnt
-        rpn_loss_box = F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets, size_average=False) /  (fg_cnt + 1e-4)
+        rpn_loss_box = F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets, size_average=False) / (fg_cnt.float() + 1e-4)
         # print 'rpn_loss_box', rpn_loss_box
         # print rpn_loss_box
 
@@ -251,12 +247,12 @@ class RPN(nn.Module):
         return x
 
     @staticmethod
-    def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, 
-                    _feat_stride, anchor_scales, anchor_ratios, is_region):
+    def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key,
+                       _feat_stride, anchor_scales, anchor_ratios, is_region):
         rpn_cls_prob_reshape = rpn_cls_prob_reshape.data.cpu().numpy()
         rpn_bbox_pred = rpn_bbox_pred.data.cpu().numpy()
-        x = proposal_layer_py(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, 
-                    cfg_key, _feat_stride, anchor_scales, anchor_ratios, is_region=is_region)
+        x = proposal_layer_py(rpn_cls_prob_reshape, rpn_bbox_pred, im_info,
+                              cfg_key, _feat_stride, anchor_scales, anchor_ratios, is_region=is_region)
         x = network.np_to_variable(x, is_cuda=True)
         return x.view(-1, 5)
 

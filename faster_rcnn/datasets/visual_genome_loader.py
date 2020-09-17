@@ -15,8 +15,8 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
-from ..fast_rcnn.config import cfg
-from ..utils.blob import prep_im_for_blob, im_list_to_blob
+from faster_rcnn.fast_rcnn.config import cfg
+from faster_rcnn.utils.blob import prep_im_for_blob, im_list_to_blob
 
 class visual_genome(data.Dataset):
     def __init__(self, set_option, image_set, annotation_folder='top_150_50'):
@@ -83,7 +83,9 @@ class visual_genome(data.Dataset):
     def __getitem__(self, index):
         # Sample random scales to use for each image in this batch
         target_scale = cfg.TRAIN.SCALES[npr.randint(0, high=len(cfg.TRAIN.SCALES))]
-        img = cv2.imread(osp.join(cfg.IMG_DATA_DIR, self.annotations[index]['path']))
+        img = cv2.imread(osp.join(cfg.IMG_DATA_DIR, 'VG_100K', self.annotations[index]['path']))
+        if img is None:
+            img = cv2.imread(osp.join(cfg.IMG_DATA_DIR, 'VG_100K_2', self.annotations[index]['path']))
         img, im_scale = self._image_resize(img, target_scale, cfg.TRAIN.MAX_SIZE)
         im_info = np.array([img.shape[0], img.shape[1], im_scale], dtype=np.float32)
         img = Image.fromarray(img)
