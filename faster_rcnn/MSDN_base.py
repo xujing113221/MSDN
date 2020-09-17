@@ -128,7 +128,7 @@ class HDN_base(nn.Module):
         bg_cnt = label.data.numel() - fg_cnt
 
         ce_weights = np.sqrt(self.object_loss_weight)
-        ce_weights[0] = float(fg_cnt) / (bg_cnt + 1e-5)
+        ce_weights[0] = fg_cnt.float() / (bg_cnt.float() + 1e-5)
         ce_weights = ce_weights.cuda()
 
         maxv, predict = cls_score.data.max(1)
@@ -161,7 +161,7 @@ class HDN_base(nn.Module):
         bbox_pred = torch.mul(bbox_pred, bbox_inside_weights)
 
         # a = bbox_pred.data.cpu().numpy()
-        loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets, size_average=False) / (fg_cnt + 1e-5)
+        loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets, size_average=False) / (fg_cnt.float() + 1e-5)
         # print loss_box
 
         return cross_entropy, loss_box
@@ -171,7 +171,7 @@ class HDN_base(nn.Module):
         bbox_targets = torch.mul(bbox_targets, bbox_inside_weights)
         bbox_pred = torch.mul(bbox_pred, bbox_inside_weights)
         fg_cnt = torch.sum(bbox_inside_weights[:, 0].data.ne(0))
-        loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets, size_average=False) / (fg_cnt + 1e-5)
+        loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets, size_average=False) / (fg_cnt.float() + 1e-5)
         return loss_box
 
     def build_loss_cls(self, cls_score, labels):
@@ -180,7 +180,7 @@ class HDN_base(nn.Module):
         bg_cnt = labels.data.numel() - fg_cnt
 
         ce_weights = np.sqrt(self.predicate_loss_weight)
-        ce_weights[0] = float(fg_cnt) / (bg_cnt + 1e-5)
+        ce_weights[0] = fg_cnt.float() / (bg_cnt.float() + 1e-5)
         ce_weights = ce_weights.cuda()
         # print '[relationship]:'
         # print 'ce_weights:'
@@ -189,7 +189,7 @@ class HDN_base(nn.Module):
         # print cls_score
         # print 'labels'
         # print labels
-        ce_weights = ce_weights.cuda()
+        # ce_weights = ce_weights.cuda()
         cross_entropy = F.cross_entropy(cls_score, labels, weight=ce_weights)
 
         maxv, predict = cls_score.data.max(1)

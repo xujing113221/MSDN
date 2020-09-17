@@ -274,24 +274,34 @@ def train(train_loader, target_net, optimizer, epoch):
             loss = target_net.loss
 
         loss += target_net.objectiveness_loss
-
-        train_loss.update(target_net.loss.data.cpu().numpy()[0], im_data.size(0))
-        train_obj_cls_loss.update(target_net.cross_entropy_object.data.cpu().numpy()[0], im_data.size(0))
-        train_obj_box_loss.update(target_net.loss_obj_box.data.cpu().numpy()[0], im_data.size(0))
-        train_pred_cls_loss.update(target_net.cross_entropy_predicate.data.cpu().numpy()[0], im_data.size(0))
-        train_region_caption_loss.update(target_net.region_caption_loss.data.cpu().numpy()[0], im_data.size(0))
-        train_rpn_loss.update(target_net.rpn.loss.data.cpu().numpy()[0], im_data.size(0))
-        overall_train_loss.update(target_net.loss.data.cpu().numpy()[0], im_data.size(0))
-        overall_train_rpn_loss.update(target_net.rpn.loss.data.cpu().numpy()[0], im_data.size(0))
-        overall_train_region_caption_loss.update(target_net.region_caption_loss.data.cpu().numpy()[0], im_data.size(0))
+        # train_loss.update(target_net.loss.data.cpu().numpy()[0], im_data.size(0))
+        # train_obj_cls_loss.update(target_net.cross_entropy_object.data.cpu().numpy()[0], im_data.size(0))
+        # train_obj_box_loss.update(target_net.loss_obj_box.data.cpu().numpy()[0], im_data.size(0))
+        # train_pred_cls_loss.update(target_net.cross_entropy_predicate.data.cpu().numpy()[0], im_data.size(0))
+        # train_region_caption_loss.update(target_net.region_caption_loss.data.cpu().numpy()[0], im_data.size(0))
+        # train_rpn_loss.update(target_net.rpn.loss.data.cpu().numpy()[0], im_data.size(0))
+        # overall_train_loss.update(target_net.loss.data.cpu().numpy()[0], im_data.size(0))
+        # overall_train_rpn_loss.update(target_net.rpn.loss.data.cpu().numpy()[0], im_data.size(0))
+        # overall_train_region_caption_loss.update(target_net.region_caption_loss.data.cpu().numpy()[0], im_data.size(0))
+        train_loss.update(target_net.loss.data.cpu().numpy(), im_data.size(0))
+        train_obj_cls_loss.update(target_net.cross_entropy_object.data.cpu().numpy(), im_data.size(0))
+        train_obj_box_loss.update(target_net.loss_obj_box.data.cpu().numpy(), im_data.size(0))
+        train_pred_cls_loss.update(target_net.cross_entropy_predicate.data.cpu().numpy(), im_data.size(0))
+        train_region_caption_loss.update(target_net.region_caption_loss.data.cpu().numpy(), im_data.size(0))
+        train_rpn_loss.update(target_net.rpn.loss.data.cpu().numpy(), im_data.size(0))
+        overall_train_loss.update(target_net.loss.data.cpu().numpy(), im_data.size(0))
+        overall_train_rpn_loss.update(target_net.rpn.loss.data.cpu().numpy(), im_data.size(0))
+        overall_train_region_caption_loss.update(target_net.region_caption_loss.data.cpu().numpy(), im_data.size(0))
         accuracy_obj.update(target_net.tp, target_net.tf, target_net.fg_cnt, target_net.bg_cnt)
         accuracy_pred.update(target_net.tp_pred, target_net.tf_pred, target_net.fg_cnt_pred, target_net.bg_cnt_pred)
         accuracy_reg.update(target_net.tp_reg, target_net.tf_reg, target_net.fg_cnt_reg, target_net.bg_cnt_reg)
 
         if args.region_bbox_reg:
-            train_region_box_loss.update(target_net.loss_region_box.data.cpu().numpy()[0], im_data.size(0))
+            # train_region_box_loss.update(target_net.loss_region_box.data.cpu().numpy()[0], im_data.size(0))
+            train_region_box_loss.update(target_net.loss_region_box.data.cpu().numpy(), im_data.size(0))
 
-        train_region_objectiveness_loss.update(target_net.objectiveness_loss.data.cpu().numpy()[0], im_data.size(0))
+        # train_region_objectiveness_loss.update(target_net.objectiveness_loss.data.cpu().numpy()[0], im_data.size(0))
+        train_region_objectiveness_loss.update(target_net.objectiveness_loss.data.cpu().numpy(), im_data.size(0))
 
 
         optimizer.zero_grad()
